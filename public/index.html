@@ -1,59 +1,30 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="chat-container">
-        <h2>Chatbot</h2>
-        <div id="chat-box"></div>
-        <input type="text" id="user-input" placeholder="Type your message">
-        <button id="send-btn">Send</button>
-    </div>
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const chatRoutes = require("./routes/chat");
 
-    <script>
-        const chatBox = document.getElementById("chat-box");
-        const userInput = document.getElementById("user-input");
-        const sendBtn = document.getElementById("send-btn");
+dotenv.config();
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-        async function sendMessage() {
-            const message = userInput.value;
-            if (!message) return;
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static("public"));
 
-            // Show user message
-            chatBox.innerHTML += `<div class="user-msg">${message}</div>`;
-            userInput.value = "";
+// Routes
+app.use("/api/chat", chatRoutes);
 
-            // Send to server
-            const response = await fetch("/api/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userMessage: message })
-            });
-            const data = await response.json();
-            chatBox.innerHTML += `<div class="bot-msg">${data.botReply}</div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log("MongoDB connected"))
+.catch(err => console.error(err));
 
-        sendBtn.addEventListener("click", sendMessage);
-        userInput.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") sendMessage();
-        });
-
-        async function loadMessages() {
-            const res = await fetch("/api/chat");
-            const messages = await res.json();
-            messages.forEach(msg => {
-                chatBox.innerHTML += `<div class="user-msg">${msg.userMessage}</div>`;
-                chatBox.innerHTML += `<div class="bot-msg">${msg.botReply}</div>`;
-            });
-        }
-
-        loadMessages();
-    </script>
-</body>
-</html>
-
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
